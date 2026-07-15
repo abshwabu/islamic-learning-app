@@ -30,7 +30,7 @@ class MatchingDersesSection extends StatelessWidget {
             leading: const Icon(Icons.menu_book_outlined),
             title: Text(ders.title),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push(AppRoutes.derses),
+            onTap: () => context.push(AppRoutes.dersEpisodesPath(ders.id)),
           ),
         ),
       ],

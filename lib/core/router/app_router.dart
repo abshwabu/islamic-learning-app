@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/derses/presentation/derses_list_screen.dart';
 import '../../features/derses/presentation/derses_screen.dart';
 import '../../features/downloads/presentation/downloads_screen.dart';
+import '../../features/episodes/presentation/episodes_list_screen.dart';
 import '../../features/favorites/presentation/favorites_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/player/presentation/player_screen.dart';
@@ -15,6 +17,14 @@ abstract final class AppRoutes {
   static const downloads = '/downloads';
   static const favorites = '/favorites';
   static const settings = '/settings';
+  static const ustazDerses = '/ustaz/:ustazId/derses';
+  static const topicDerses = '/topic/:topicId/derses';
+  static const dersEpisodes = '/ders/:dersId/episodes';
+
+  static String ustazDersesPath(int ustazId) => '/ustaz/$ustazId/derses';
+  static String topicDersesPath(int topicId) => '/topic/$topicId/derses';
+  static String dersEpisodesPath(int dersId) => '/ders/$dersId/episodes';
+  static String playerEpisodePath(int episodeId) => '/player/$episodeId';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -61,11 +71,41 @@ final appRouter = GoRouter(
       ],
     ),
     GoRoute(
-      path: '${AppRoutes.player}/:id',
+      path: AppRoutes.ustazDerses,
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) {
-        final id = state.pathParameters['id'];
-        return PlayerScreen(dersId: id);
+        final ustazId = int.parse(state.pathParameters['ustazId']!);
+        return DersesListScreen(
+          filterType: DersesFilterType.ustaz,
+          filterId: ustazId,
+        );
+      },
+    ),
+    GoRoute(
+      path: AppRoutes.topicDerses,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final topicId = int.parse(state.pathParameters['topicId']!);
+        return DersesListScreen(
+          filterType: DersesFilterType.topic,
+          filterId: topicId,
+        );
+      },
+    ),
+    GoRoute(
+      path: AppRoutes.dersEpisodes,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final dersId = int.parse(state.pathParameters['dersId']!);
+        return EpisodesListScreen(dersId: dersId);
+      },
+    ),
+    GoRoute(
+      path: '${AppRoutes.player}/:episodeId',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final episodeId = state.pathParameters['episodeId'];
+        return PlayerScreen(episodeId: episodeId);
       },
     ),
     GoRoute(

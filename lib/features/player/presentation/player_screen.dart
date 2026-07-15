@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class PlayerScreen extends StatelessWidget {
-  const PlayerScreen({super.key, this.dersId});
+  const PlayerScreen({super.key, this.episodeId});
 
-  final String? dersId;
+  final String? episodeId;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +20,7 @@ class PlayerScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              dersId != null ? 'Playing ders #$dersId' : 'No ders selected',
+              episodeId != null ? 'Playing episode #$episodeId' : 'No episode selected',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 32),

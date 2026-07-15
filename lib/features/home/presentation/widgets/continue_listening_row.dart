@@ -55,7 +55,7 @@ class _ContinueListeningCard extends StatelessWidget {
       child: Card(
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => context.push('${AppRoutes.player}/${item.episode.id}'),
+          onTap: () => context.push(AppRoutes.playerEpisodePath(item.episode.id)),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(

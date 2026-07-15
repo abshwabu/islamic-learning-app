@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../content/providers/content_sync_provider.dart';
+import '../../../core/router/app_router.dart';
 import '../models/home_models.dart';
 import '../providers/home_providers.dart';
 import 'widgets/browse_mode_toggle.dart';
@@ -151,6 +153,7 @@ class _UstazGrid extends ConsumerWidget {
                 return UstazCard(
                   ustaz: ustaz,
                   dersCount: counts[ustaz.id] ?? 0,
+                  onTap: () => context.push(AppRoutes.ustazDersesPath(ustaz.id)),
                 );
               },
               childCount: ustazes.length,
@@ -202,6 +205,7 @@ class _TopicGrid extends ConsumerWidget {
                 return TopicCard(
                   topic: topic,
                   dersCount: counts[topic.id] ?? 0,
+                  onTap: () => context.push(AppRoutes.topicDersesPath(topic.id)),
                 );
               },
               childCount: topics.length,
