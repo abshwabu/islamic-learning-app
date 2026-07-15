@@ -6,11 +6,15 @@ import 'app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await JustAudioBackground.init(
-    androidNotificationChannelId: 'com.islamiclearning.audio',
-    androidNotificationChannelName: 'Islamic Learning Playback',
-    androidNotificationOngoing: true,
-  );
+  try {
+    await JustAudioBackground.init(
+      androidNotificationChannelId: 'com.islamiclearning.audio',
+      androidNotificationChannelName: 'Islamic Learning Playback',
+      androidNotificationOngoing: true,
+    );
+  } on Object catch (error, stackTrace) {
+    debugPrint('JustAudioBackground.init failed: $error\n$stackTrace');
+  }
   runApp(
     const ProviderScope(
       child: IslamicLearningApp(),
