@@ -38,6 +38,35 @@ class CachedEpisodesDao extends DatabaseAccessor<AppDatabase>
     return id;
   }
 
+  Future<void> upsert(CachedEpisodesCompanion entry) =>
+      into(cachedEpisodes).insertOnConflictUpdate(entry);
+
+  Future<void> syncUpsertAll(
+    List<CachedEpisodesCompanion> entries,
+  ) async {
+    await transaction(() async {
+      for (final entry in entries) {
+        await into(cachedEpisodes).insertOnConflictUpdate(entry);
+      }
+    });
+
+    final dersIds = <int>{};
+    for (final entry in entries) {
+      if (entry.dersId.present) dersIds.add(entry.dersId.value);
+    }
+    for (final dersId in dersIds) {
+      await recalculateEndPages(dersId);
+    }
+  }
+
+  Future<void> unpublishNotIn(Set<int> activeIds) async {
+    final query = update(cachedEpisodes);
+    if (activeIds.isNotEmpty) {
+      query.where((t) => t.id.isNotIn(activeIds));
+    }
+    await query.write(const CachedEpisodesCompanion(isPublished: Value(false)));
+  }
+
   Future<bool> updateEntry(CachedEpisode entry) async {
     final updated = await update(cachedEpisodes).replace(entry);
     if (updated) await recalculateEndPages(entry.dersId);

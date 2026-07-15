@@ -30,6 +30,17 @@ class CachedUstazesDao extends DatabaseAccessor<AppDatabase>
   Future<int> insert(CachedUstazesCompanion entry) =>
       into(cachedUstazes).insert(entry);
 
+  Future<void> upsert(CachedUstazesCompanion entry) =>
+      into(cachedUstazes).insertOnConflictUpdate(entry);
+
+  Future<void> deactivateNotIn(Set<int> activeIds) async {
+    final query = update(cachedUstazes);
+    if (activeIds.isNotEmpty) {
+      query.where((t) => t.id.isNotIn(activeIds));
+    }
+    await query.write(const CachedUstazesCompanion(isActive: Value(false)));
+  }
+
   Future<bool> updateEntry(CachedUstaze entry) =>
       update(cachedUstazes).replace(entry);
 

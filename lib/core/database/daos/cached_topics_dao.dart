@@ -29,6 +29,17 @@ class CachedTopicsDao extends DatabaseAccessor<AppDatabase>
   Future<int> insert(CachedTopicsCompanion entry) =>
       into(cachedTopics).insert(entry);
 
+  Future<void> upsert(CachedTopicsCompanion entry) =>
+      into(cachedTopics).insertOnConflictUpdate(entry);
+
+  Future<void> deactivateNotIn(Set<int> activeIds) async {
+    final query = update(cachedTopics);
+    if (activeIds.isNotEmpty) {
+      query.where((t) => t.id.isNotIn(activeIds));
+    }
+    await query.write(const CachedTopicsCompanion(isActive: Value(false)));
+  }
+
   Future<bool> updateEntry(CachedTopic entry) =>
       update(cachedTopics).replace(entry);
 

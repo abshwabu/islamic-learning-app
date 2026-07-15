@@ -41,6 +41,17 @@ class CachedDersesDao extends DatabaseAccessor<AppDatabase>
   Future<int> insert(CachedDersesCompanion entry) =>
       into(cachedDerses).insert(entry);
 
+  Future<void> upsert(CachedDersesCompanion entry) =>
+      into(cachedDerses).insertOnConflictUpdate(entry);
+
+  Future<void> unpublishNotIn(Set<int> activeIds) async {
+    final query = update(cachedDerses);
+    if (activeIds.isNotEmpty) {
+      query.where((t) => t.id.isNotIn(activeIds));
+    }
+    await query.write(const CachedDersesCompanion(isPublished: Value(false)));
+  }
+
   Future<bool> updateEntry(CachedDers entry) =>
       update(cachedDerses).replace(entry);
 
