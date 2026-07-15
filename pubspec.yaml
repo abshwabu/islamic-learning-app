@@ -19,6 +19,12 @@ dependencies:
   path_provider: ^2.1.5
   path: ^1.9.1
   go_router: ^15.1.2
+  just_audio: ^0.9.46
+  just_audio_background: ^0.0.1-beta.17
+  audio_service: ^0.18.18
+  audio_session: ^0.1.25
+  pdfx: ^2.9.2
+  rxdart: ^0.28.0
 
 dev_dependencies:
   flutter_test:

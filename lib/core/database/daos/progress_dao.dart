@@ -28,6 +28,33 @@ class ProgressDao extends DatabaseAccessor<AppDatabase>
 
   Future<int> insert(ProgressCompanion entry) => into(progress).insert(entry);
 
+  Future<void> upsertProgress({
+    required int episodeId,
+    required int positionSeconds,
+    required bool isCompleted,
+  }) async {
+    final existing = await getByEpisodeId(episodeId);
+    if (existing == null) {
+      await into(progress).insert(
+        ProgressCompanion.insert(
+          episodeId: episodeId,
+          positionSeconds: Value(positionSeconds),
+          isCompleted: Value(isCompleted),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+      return;
+    }
+
+    await (update(progress)..where((t) => t.episodeId.equals(episodeId))).write(
+      ProgressCompanion(
+        positionSeconds: Value(positionSeconds),
+        isCompleted: Value(isCompleted),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   Future<bool> updateEntry(PlaybackProgress entry) =>
       update(progress).replace(entry);
 
