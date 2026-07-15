@@ -1,5 +1,4 @@
 import 'package:drift/native.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,7 +23,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Islamic Learning'), findsOneWidget);
-    expect(find.byIcon(Icons.home), findsOneWidget);
+    expect(find.text('By Ustaz'), findsOneWidget);
+    expect(find.text('By Topic'), findsOneWidget);
+    expect(find.text('Search ustaz, topic, or ders'), findsOneWidget);
   });
 }

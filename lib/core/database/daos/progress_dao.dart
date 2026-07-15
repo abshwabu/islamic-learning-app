@@ -19,6 +19,13 @@ class ProgressDao extends DatabaseAccessor<AppDatabase>
       (select(progress)..where((t) => t.episodeId.equals(episodeId)))
           .getSingleOrNull();
 
+  Future<List<PlaybackProgress>> getRecentIncomplete({int limit = 10}) =>
+      (select(progress)
+            ..where((t) => t.isCompleted.equals(false))
+            ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)])
+            ..limit(limit))
+          .get();
+
   Future<int> insert(ProgressCompanion entry) => into(progress).insert(entry);
 
   Future<bool> updateEntry(PlaybackProgress entry) =>
