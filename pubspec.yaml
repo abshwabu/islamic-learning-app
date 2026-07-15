@@ -1,0 +1,31 @@
+name: islamic_learning_app
+description: "Islamic learning app for audio derses and lessons."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  dio: ^5.8.0+1
+  drift: ^2.26.0
+  drift_flutter: ^0.2.4
+  path_provider: ^2.1.5
+  path: ^1.9.1
+  go_router: ^15.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.15
+  drift_dev: ^2.26.0
+
+flutter:
+  uses-material-design: true
