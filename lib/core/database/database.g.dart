@@ -2289,6 +2289,29 @@ class $DownloadsTable extends Downloads
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dersIdMeta = const VerificationMeta('dersId');
+  @override
+  late final GeneratedColumn<int> dersId = GeneratedColumn<int>(
+    'ders_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES cached_derses (id)',
+    ),
+  );
   static const VerificationMeta _episodeIdMeta = const VerificationMeta(
     'episodeId',
   );
@@ -2296,9 +2319,9 @@ class $DownloadsTable extends Downloads
   late final GeneratedColumn<int> episodeId = GeneratedColumn<int>(
     'episode_id',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.int,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES cached_episodes (id)',
     ),
@@ -2334,7 +2357,7 @@ class $DownloadsTable extends Downloads
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultValue: const Constant('completed'),
+    defaultValue: const Constant('pending'),
   );
   static const VerificationMeta _downloadedAtMeta = const VerificationMeta(
     'downloadedAt',
@@ -2351,6 +2374,8 @@ class $DownloadsTable extends Downloads
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    entityType,
+    dersId,
     episodeId,
     localPath,
     fileSizeBytes,
@@ -2372,13 +2397,27 @@ class $DownloadsTable extends Downloads
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('ders_id')) {
+      context.handle(
+        _dersIdMeta,
+        dersId.isAcceptableOrUnknown(data['ders_id']!, _dersIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dersIdMeta);
+    }
     if (data.containsKey('episode_id')) {
       context.handle(
         _episodeIdMeta,
         episodeId.isAcceptableOrUnknown(data['episode_id']!, _episodeIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_episodeIdMeta);
     }
     if (data.containsKey('local_path')) {
       context.handle(
@@ -2425,10 +2464,18 @@ class $DownloadsTable extends Downloads
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      dersId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ders_id'],
+      )!,
       episodeId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}episode_id'],
-      )!,
+      ),
       localPath: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}local_path'],
@@ -2456,14 +2503,18 @@ class $DownloadsTable extends Downloads
 
 class Download extends DataClass implements Insertable<Download> {
   final int id;
-  final int episodeId;
+  final String entityType;
+  final int dersId;
+  final int? episodeId;
   final String localPath;
   final int fileSizeBytes;
   final String status;
   final DateTime downloadedAt;
   const Download({
     required this.id,
-    required this.episodeId,
+    required this.entityType,
+    required this.dersId,
+    this.episodeId,
     required this.localPath,
     required this.fileSizeBytes,
     required this.status,
@@ -2473,7 +2524,11 @@ class Download extends DataClass implements Insertable<Download> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['episode_id'] = Variable<int>(episodeId);
+    map['entity_type'] = Variable<String>(entityType);
+    map['ders_id'] = Variable<int>(dersId);
+    if (!nullToAbsent || episodeId != null) {
+      map['episode_id'] = Variable<int>(episodeId);
+    }
     map['local_path'] = Variable<String>(localPath);
     map['file_size_bytes'] = Variable<int>(fileSizeBytes);
     map['status'] = Variable<String>(status);
@@ -2484,7 +2539,11 @@ class Download extends DataClass implements Insertable<Download> {
   DownloadsCompanion toCompanion(bool nullToAbsent) {
     return DownloadsCompanion(
       id: Value(id),
-      episodeId: Value(episodeId),
+      entityType: Value(entityType),
+      dersId: Value(dersId),
+      episodeId: episodeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(episodeId),
       localPath: Value(localPath),
       fileSizeBytes: Value(fileSizeBytes),
       status: Value(status),
@@ -2499,7 +2558,9 @@ class Download extends DataClass implements Insertable<Download> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Download(
       id: serializer.fromJson<int>(json['id']),
-      episodeId: serializer.fromJson<int>(json['episodeId']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      dersId: serializer.fromJson<int>(json['dersId']),
+      episodeId: serializer.fromJson<int?>(json['episodeId']),
       localPath: serializer.fromJson<String>(json['localPath']),
       fileSizeBytes: serializer.fromJson<int>(json['fileSizeBytes']),
       status: serializer.fromJson<String>(json['status']),
@@ -2511,7 +2572,9 @@ class Download extends DataClass implements Insertable<Download> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'episodeId': serializer.toJson<int>(episodeId),
+      'entityType': serializer.toJson<String>(entityType),
+      'dersId': serializer.toJson<int>(dersId),
+      'episodeId': serializer.toJson<int?>(episodeId),
       'localPath': serializer.toJson<String>(localPath),
       'fileSizeBytes': serializer.toJson<int>(fileSizeBytes),
       'status': serializer.toJson<String>(status),
@@ -2521,14 +2584,18 @@ class Download extends DataClass implements Insertable<Download> {
 
   Download copyWith({
     int? id,
-    int? episodeId,
+    String? entityType,
+    int? dersId,
+    Value<int?> episodeId = const Value.absent(),
     String? localPath,
     int? fileSizeBytes,
     String? status,
     DateTime? downloadedAt,
   }) => Download(
     id: id ?? this.id,
-    episodeId: episodeId ?? this.episodeId,
+    entityType: entityType ?? this.entityType,
+    dersId: dersId ?? this.dersId,
+    episodeId: episodeId.present ? episodeId.value : this.episodeId,
     localPath: localPath ?? this.localPath,
     fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
     status: status ?? this.status,
@@ -2537,6 +2604,10 @@ class Download extends DataClass implements Insertable<Download> {
   Download copyWithCompanion(DownloadsCompanion data) {
     return Download(
       id: data.id.present ? data.id.value : this.id,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      dersId: data.dersId.present ? data.dersId.value : this.dersId,
       episodeId: data.episodeId.present ? data.episodeId.value : this.episodeId,
       localPath: data.localPath.present ? data.localPath.value : this.localPath,
       fileSizeBytes: data.fileSizeBytes.present
@@ -2553,6 +2624,8 @@ class Download extends DataClass implements Insertable<Download> {
   String toString() {
     return (StringBuffer('Download(')
           ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('dersId: $dersId, ')
           ..write('episodeId: $episodeId, ')
           ..write('localPath: $localPath, ')
           ..write('fileSizeBytes: $fileSizeBytes, ')
@@ -2565,6 +2638,8 @@ class Download extends DataClass implements Insertable<Download> {
   @override
   int get hashCode => Object.hash(
     id,
+    entityType,
+    dersId,
     episodeId,
     localPath,
     fileSizeBytes,
@@ -2576,6 +2651,8 @@ class Download extends DataClass implements Insertable<Download> {
       identical(this, other) ||
       (other is Download &&
           other.id == this.id &&
+          other.entityType == this.entityType &&
+          other.dersId == this.dersId &&
           other.episodeId == this.episodeId &&
           other.localPath == this.localPath &&
           other.fileSizeBytes == this.fileSizeBytes &&
@@ -2585,13 +2662,17 @@ class Download extends DataClass implements Insertable<Download> {
 
 class DownloadsCompanion extends UpdateCompanion<Download> {
   final Value<int> id;
-  final Value<int> episodeId;
+  final Value<String> entityType;
+  final Value<int> dersId;
+  final Value<int?> episodeId;
   final Value<String> localPath;
   final Value<int> fileSizeBytes;
   final Value<String> status;
   final Value<DateTime> downloadedAt;
   const DownloadsCompanion({
     this.id = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.dersId = const Value.absent(),
     this.episodeId = const Value.absent(),
     this.localPath = const Value.absent(),
     this.fileSizeBytes = const Value.absent(),
@@ -2600,15 +2681,20 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
   });
   DownloadsCompanion.insert({
     this.id = const Value.absent(),
-    required int episodeId,
+    required String entityType,
+    required int dersId,
+    this.episodeId = const Value.absent(),
     required String localPath,
     this.fileSizeBytes = const Value.absent(),
     this.status = const Value.absent(),
     this.downloadedAt = const Value.absent(),
-  }) : episodeId = Value(episodeId),
+  }) : entityType = Value(entityType),
+       dersId = Value(dersId),
        localPath = Value(localPath);
   static Insertable<Download> custom({
     Expression<int>? id,
+    Expression<String>? entityType,
+    Expression<int>? dersId,
     Expression<int>? episodeId,
     Expression<String>? localPath,
     Expression<int>? fileSizeBytes,
@@ -2617,6 +2703,8 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (entityType != null) 'entity_type': entityType,
+      if (dersId != null) 'ders_id': dersId,
       if (episodeId != null) 'episode_id': episodeId,
       if (localPath != null) 'local_path': localPath,
       if (fileSizeBytes != null) 'file_size_bytes': fileSizeBytes,
@@ -2627,7 +2715,9 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
 
   DownloadsCompanion copyWith({
     Value<int>? id,
-    Value<int>? episodeId,
+    Value<String>? entityType,
+    Value<int>? dersId,
+    Value<int?>? episodeId,
     Value<String>? localPath,
     Value<int>? fileSizeBytes,
     Value<String>? status,
@@ -2635,6 +2725,8 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
   }) {
     return DownloadsCompanion(
       id: id ?? this.id,
+      entityType: entityType ?? this.entityType,
+      dersId: dersId ?? this.dersId,
       episodeId: episodeId ?? this.episodeId,
       localPath: localPath ?? this.localPath,
       fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
@@ -2648,6 +2740,12 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<int>(id.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (dersId.present) {
+      map['ders_id'] = Variable<int>(dersId.value);
     }
     if (episodeId.present) {
       map['episode_id'] = Variable<int>(episodeId.value);
@@ -2671,6 +2769,8 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
   String toString() {
     return (StringBuffer('DownloadsCompanion(')
           ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('dersId: $dersId, ')
           ..write('episodeId: $episodeId, ')
           ..write('localPath: $localPath, ')
           ..write('fileSizeBytes: $fileSizeBytes, ')
@@ -4459,6 +4559,24 @@ final class $$CachedDersesTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$DownloadsTable, List<Download>>
+  _downloadsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.downloads,
+    aliasName: $_aliasNameGenerator(db.cachedDerses.id, db.downloads.dersId),
+  );
+
+  $$DownloadsTableProcessedTableManager get downloadsRefs {
+    final manager = $$DownloadsTableTableManager(
+      $_db,
+      $_db.downloads,
+    ).filter((f) => f.dersId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_downloadsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$CachedDersesTableFilterComposer
@@ -4582,6 +4700,31 @@ class $$CachedDersesTableFilterComposer
           }) => $$CachedEpisodesTableFilterComposer(
             $db: $db,
             $table: $db.cachedEpisodes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> downloadsRefs(
+    Expression<bool> Function($$DownloadsTableFilterComposer f) f,
+  ) {
+    final $$DownloadsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.downloads,
+      getReferencedColumn: (t) => t.dersId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DownloadsTableFilterComposer(
+            $db: $db,
+            $table: $db.downloads,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4815,6 +4958,31 @@ class $$CachedDersesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> downloadsRefs<T extends Object>(
+    Expression<T> Function($$DownloadsTableAnnotationComposer a) f,
+  ) {
+    final $$DownloadsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.downloads,
+      getReferencedColumn: (t) => t.dersId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DownloadsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.downloads,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$CachedDersesTableTableManager
@@ -4834,6 +5002,7 @@ class $$CachedDersesTableTableManager
             bool ustazId,
             bool topicId,
             bool cachedEpisodesRefs,
+            bool downloadsRefs,
           })
         > {
   $$CachedDersesTableTableManager(_$AppDatabase db, $CachedDersesTable table)
@@ -4912,11 +5081,17 @@ class $$CachedDersesTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({ustazId = false, topicId = false, cachedEpisodesRefs = false}) {
+              ({
+                ustazId = false,
+                topicId = false,
+                cachedEpisodesRefs = false,
+                downloadsRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (cachedEpisodesRefs) db.cachedEpisodes,
+                    if (downloadsRefs) db.downloads,
                   ],
                   addJoins:
                       <
@@ -4990,6 +5165,27 @@ class $$CachedDersesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (downloadsRefs)
+                        await $_getPrefetchedData<
+                          CachedDers,
+                          $CachedDersesTable,
+                          Download
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CachedDersesTableReferences
+                              ._downloadsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CachedDersesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).downloadsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.dersId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -5014,6 +5210,7 @@ typedef $$CachedDersesTableProcessedTableManager =
         bool ustazId,
         bool topicId,
         bool cachedEpisodesRefs,
+        bool downloadsRefs,
       })
     >;
 typedef $$CachedEpisodesTableCreateCompanionBuilder =
@@ -5636,7 +5833,9 @@ typedef $$CachedEpisodesTableProcessedTableManager =
 typedef $$DownloadsTableCreateCompanionBuilder =
     DownloadsCompanion Function({
       Value<int> id,
-      required int episodeId,
+      required String entityType,
+      required int dersId,
+      Value<int?> episodeId,
       required String localPath,
       Value<int> fileSizeBytes,
       Value<String> status,
@@ -5645,7 +5844,9 @@ typedef $$DownloadsTableCreateCompanionBuilder =
 typedef $$DownloadsTableUpdateCompanionBuilder =
     DownloadsCompanion Function({
       Value<int> id,
-      Value<int> episodeId,
+      Value<String> entityType,
+      Value<int> dersId,
+      Value<int?> episodeId,
       Value<String> localPath,
       Value<int> fileSizeBytes,
       Value<String> status,
@@ -5656,14 +5857,33 @@ final class $$DownloadsTableReferences
     extends BaseReferences<_$AppDatabase, $DownloadsTable, Download> {
   $$DownloadsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
+  static $CachedDersesTable _dersIdTable(_$AppDatabase db) =>
+      db.cachedDerses.createAlias(
+        $_aliasNameGenerator(db.downloads.dersId, db.cachedDerses.id),
+      );
+
+  $$CachedDersesTableProcessedTableManager get dersId {
+    final $_column = $_itemColumn<int>('ders_id')!;
+
+    final manager = $$CachedDersesTableTableManager(
+      $_db,
+      $_db.cachedDerses,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_dersIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
   static $CachedEpisodesTable _episodeIdTable(_$AppDatabase db) =>
       db.cachedEpisodes.createAlias(
         $_aliasNameGenerator(db.downloads.episodeId, db.cachedEpisodes.id),
       );
 
-  $$CachedEpisodesTableProcessedTableManager get episodeId {
-    final $_column = $_itemColumn<int>('episode_id')!;
-
+  $$CachedEpisodesTableProcessedTableManager? get episodeId {
+    final $_column = $_itemColumn<int>('episode_id');
+    if ($_column == null) return null;
     final manager = $$CachedEpisodesTableTableManager(
       $_db,
       $_db.cachedEpisodes,
@@ -5690,6 +5910,11 @@ class $$DownloadsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get localPath => $composableBuilder(
     column: $table.localPath,
     builder: (column) => ColumnFilters(column),
@@ -5709,6 +5934,29 @@ class $$DownloadsTableFilterComposer
     column: $table.downloadedAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$CachedDersesTableFilterComposer get dersId {
+    final $$CachedDersesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.dersId,
+      referencedTable: $db.cachedDerses,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CachedDersesTableFilterComposer(
+            $db: $db,
+            $table: $db.cachedDerses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   $$CachedEpisodesTableFilterComposer get episodeId {
     final $$CachedEpisodesTableFilterComposer composer = $composerBuilder(
@@ -5748,6 +5996,11 @@ class $$DownloadsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get localPath => $composableBuilder(
     column: $table.localPath,
     builder: (column) => ColumnOrderings(column),
@@ -5767,6 +6020,29 @@ class $$DownloadsTableOrderingComposer
     column: $table.downloadedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$CachedDersesTableOrderingComposer get dersId {
+    final $$CachedDersesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.dersId,
+      referencedTable: $db.cachedDerses,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CachedDersesTableOrderingComposer(
+            $db: $db,
+            $table: $db.cachedDerses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   $$CachedEpisodesTableOrderingComposer get episodeId {
     final $$CachedEpisodesTableOrderingComposer composer = $composerBuilder(
@@ -5804,6 +6080,11 @@ class $$DownloadsTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
+  GeneratedColumn<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get localPath =>
       $composableBuilder(column: $table.localPath, builder: (column) => column);
 
@@ -5819,6 +6100,29 @@ class $$DownloadsTableAnnotationComposer
     column: $table.downloadedAt,
     builder: (column) => column,
   );
+
+  $$CachedDersesTableAnnotationComposer get dersId {
+    final $$CachedDersesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.dersId,
+      referencedTable: $db.cachedDerses,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CachedDersesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cachedDerses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   $$CachedEpisodesTableAnnotationComposer get episodeId {
     final $$CachedEpisodesTableAnnotationComposer composer = $composerBuilder(
@@ -5857,7 +6161,7 @@ class $$DownloadsTableTableManager
           $$DownloadsTableUpdateCompanionBuilder,
           (Download, $$DownloadsTableReferences),
           Download,
-          PrefetchHooks Function({bool episodeId})
+          PrefetchHooks Function({bool dersId, bool episodeId})
         > {
   $$DownloadsTableTableManager(_$AppDatabase db, $DownloadsTable table)
     : super(
@@ -5873,13 +6177,17 @@ class $$DownloadsTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<int> episodeId = const Value.absent(),
+                Value<String> entityType = const Value.absent(),
+                Value<int> dersId = const Value.absent(),
+                Value<int?> episodeId = const Value.absent(),
                 Value<String> localPath = const Value.absent(),
                 Value<int> fileSizeBytes = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<DateTime> downloadedAt = const Value.absent(),
               }) => DownloadsCompanion(
                 id: id,
+                entityType: entityType,
+                dersId: dersId,
                 episodeId: episodeId,
                 localPath: localPath,
                 fileSizeBytes: fileSizeBytes,
@@ -5889,13 +6197,17 @@ class $$DownloadsTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                required int episodeId,
+                required String entityType,
+                required int dersId,
+                Value<int?> episodeId = const Value.absent(),
                 required String localPath,
                 Value<int> fileSizeBytes = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<DateTime> downloadedAt = const Value.absent(),
               }) => DownloadsCompanion.insert(
                 id: id,
+                entityType: entityType,
+                dersId: dersId,
                 episodeId: episodeId,
                 localPath: localPath,
                 fileSizeBytes: fileSizeBytes,
@@ -5910,7 +6222,7 @@ class $$DownloadsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({episodeId = false}) {
+          prefetchHooksCallback: ({dersId = false, episodeId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -5930,6 +6242,19 @@ class $$DownloadsTableTableManager
                       dynamic
                     >
                   >(state) {
+                    if (dersId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.dersId,
+                                referencedTable: $$DownloadsTableReferences
+                                    ._dersIdTable(db),
+                                referencedColumn: $$DownloadsTableReferences
+                                    ._dersIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
                     if (episodeId) {
                       state =
                           state.withJoin(
@@ -5967,7 +6292,7 @@ typedef $$DownloadsTableProcessedTableManager =
       $$DownloadsTableUpdateCompanionBuilder,
       (Download, $$DownloadsTableReferences),
       Download,
-      PrefetchHooks Function({bool episodeId})
+      PrefetchHooks Function({bool dersId, bool episodeId})
     >;
 typedef $$ProgressTableCreateCompanionBuilder =
     ProgressCompanion Function({

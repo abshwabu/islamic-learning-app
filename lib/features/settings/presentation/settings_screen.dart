@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../downloads/providers/wifi_only_provider.dart';
 import '../providers/theme_mode_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -9,6 +10,11 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final wifiOnlyAsync = ref.watch(wifiOnlyDownloadProvider);
+    final wifiOnly = wifiOnlyAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => true,
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -33,6 +39,21 @@ class SettingsScreen extends ConsumerWidget {
                 );
               }).toList(),
             ),
+          ),
+          const Divider(),
+          const ListTile(
+            title: Text('Downloads'),
+            subtitle: Text('Control how offline content is fetched'),
+          ),
+          SwitchListTile(
+            title: const Text('Download over Wi‑Fi only'),
+            subtitle: const Text(
+              'Block downloads on mobile data to save bandwidth',
+            ),
+            value: wifiOnly,
+            onChanged: (value) {
+              ref.read(wifiOnlyDownloadProvider.notifier).setEnabled(value);
+            },
           ),
         ],
       ),

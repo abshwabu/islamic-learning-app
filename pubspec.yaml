@@ -25,6 +25,7 @@ dependencies:
   audio_session: ^0.1.25
   pdfx: ^2.9.2
   rxdart: ^0.28.0
+  connectivity_plus: ^6.1.4
 
 dev_dependencies:
   flutter_test:

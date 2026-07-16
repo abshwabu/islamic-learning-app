@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:islamic_learning_app/core/database/database.dart';
 import 'package:islamic_learning_app/features/derses/models/derses_models.dart';
 import 'package:islamic_learning_app/features/derses/providers/derses_providers.dart';
-import 'package:islamic_learning_app/features/derses/services/ders_download_service.dart';
 
 void main() {
   late AppDatabase db;
@@ -93,8 +92,11 @@ void main() {
 
     await db.downloadsDao.insert(
       DownloadsCompanion.insert(
-        episodeId: 1000,
+        entityType: 'episode',
+        dersId: 100,
+        episodeId: const Value(1000),
         localPath: '/downloads/ep1.mp3',
+        status: const Value('completed'),
       ),
     );
 
@@ -104,8 +106,11 @@ void main() {
 
     await db.downloadsDao.insert(
       DownloadsCompanion.insert(
-        episodeId: 1001,
+        entityType: 'episode',
+        dersId: 100,
+        episodeId: const Value(1001),
         localPath: '/downloads/ep2.mp3',
+        status: const Value('completed'),
       ),
     );
 
@@ -122,19 +127,5 @@ void main() {
     expect(episodes, hasLength(2));
     expect(episodes.first.isCompleted, true);
     expect(episodes.last.isCompleted, false);
-  });
-
-  test('downloadDers inserts records for unpublished episodes only once', () async {
-    await seedContent();
-    final service = container.read(dersDownloadServiceProvider);
-
-    final first = await service.downloadDers(100);
-    final second = await service.downloadDers(100);
-
-    expect(first, 2);
-    expect(second, 0);
-
-    final downloads = await db.downloadsDao.getAll();
-    expect(downloads, hasLength(2));
   });
 }

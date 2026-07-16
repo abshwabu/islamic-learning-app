@@ -198,9 +198,12 @@ void main() {
 
     final downloadId = await db.downloadsDao.insert(
       DownloadsCompanion.insert(
-        episodeId: 1000,
+        entityType: 'episode',
+        dersId: 100,
+        episodeId: const Value(1000),
         localPath: '/data/downloads/episode_1000.mp3',
         fileSizeBytes: const Value(5_000_000),
+        status: const Value('completed'),
       ),
     );
 

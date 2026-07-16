@@ -44,16 +44,23 @@ final publishedEpisodeCountProvider =
 final dersDownloadStatusProvider =
     FutureProvider.family<DersDownloadStatus, int>((ref, dersId) async {
   final db = ref.watch(databaseProvider);
+  final ders = await db.cachedDersesDao.getById(dersId);
   final episodes = await db.cachedEpisodesDao.getPublishedByDersId(dersId);
-  if (episodes.isEmpty) return DersDownloadStatus.none;
+
+  final pdfRequired = ders?.pdfUrl != null && ders!.pdfUrl!.isNotEmpty;
+  final expectedEpisodeCount = episodes.length;
+  final expectedTotal = expectedEpisodeCount + (pdfRequired ? 1 : 0);
+  if (expectedTotal == 0) return DersDownloadStatus.none;
 
   final episodeIds = episodes.map((e) => e.id).toSet();
-  final downloadedIds = await db.downloadsDao.getDownloadedEpisodeIds(episodeIds);
+  final downloadedIds =
+      await db.downloadsDao.getDownloadedEpisodeIds(episodeIds);
+  final pdf = await db.downloadsDao.getPdfByDersId(dersId);
+  final pdfDone = pdfRequired && pdf?.status == 'completed';
 
-  if (downloadedIds.isEmpty) return DersDownloadStatus.none;
-  if (downloadedIds.length >= episodes.length) {
-    return DersDownloadStatus.downloaded;
-  }
+  final doneTotal = downloadedIds.length + (pdfDone ? 1 : 0);
+  if (doneTotal == 0) return DersDownloadStatus.none;
+  if (doneTotal >= expectedTotal) return DersDownloadStatus.downloaded;
   return DersDownloadStatus.partial;
 });
 
@@ -70,7 +77,7 @@ final episodesWithProgressProvider =
       EpisodeWithProgress(
         episode: episode,
         isCompleted: progress?.isCompleted ?? false,
-        isDownloaded: download != null,
+        isDownloaded: download?.status == 'completed',
       ),
     );
   }
