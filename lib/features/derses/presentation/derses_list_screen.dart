@@ -6,6 +6,8 @@ import '../../../../core/database/database.dart';
 import '../../../../core/router/app_router.dart';
 import '../models/derses_models.dart';
 import '../providers/derses_providers.dart';
+import '../../favorites/models/favorite_entity_type.dart';
+import '../../favorites/presentation/widgets/favorite_star_button.dart';
 import 'widgets/download_status_badge.dart';
 
 enum DersesFilterType { ustaz, topic }
@@ -113,6 +115,10 @@ class _DersListTile extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 8),
+              FavoriteStarButton(
+                entityType: FavoriteEntityType.ders,
+                entityId: ders.id,
+              ),
               DownloadStatusBadge(status: downloadStatus),
               const Icon(Icons.chevron_right),
             ],

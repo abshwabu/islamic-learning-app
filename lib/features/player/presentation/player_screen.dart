@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfx/pdfx.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../favorites/models/favorite_entity_type.dart';
+import '../../favorites/presentation/widgets/favorite_star_button.dart';
 import '../models/player_session_state.dart';
 import '../providers/player_session_notifier.dart';
 import 'widgets/player_controls.dart';
@@ -107,6 +109,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               ),
           ],
         ),
+        actions: [
+          if (episode != null)
+            FavoriteStarButton(
+              entityType: FavoriteEntityType.episode,
+              entityId: episode.id,
+            ),
+        ],
       ),
       body: session.isLoading && !session.hasEpisode
           ? const Center(child: CircularProgressIndicator())
