@@ -83,6 +83,72 @@ void main() {
     expect(response.derses.first.episodes, hasLength(2));
   });
 
+  test('ContentResponse maps live API field names and rewrites localhost media', () {
+    final response = ContentResponse.fromJson({
+      'ustazes': [
+        {
+          'id': 1,
+          'name': 'Sheikh Ahmad Hassan',
+          'slug': 'sheikh-ahmad-hassan',
+          'bio': 'Scholar',
+          'photo': 'http://127.0.0.1:8001/storage/tmp/photo.jpg',
+          'sort_order': 1,
+        },
+      ],
+      'topics': [
+        {
+          'id': 1,
+          'name': 'Quran Studies',
+          'slug': 'quran-studies',
+          'icon': 'book',
+          'color': '#2563EB',
+          'sort_order': 1,
+        },
+      ],
+      'derses': [
+        {
+          'id': 1,
+          'ustaz_id': 1,
+          'topic_id': 1,
+          'title': 'Introduction to Tafsir',
+          'slug': 'introduction-to-tafsir',
+          'description': 'Foundational course',
+          'cover_image': 'http://127.0.0.1:8001/storage/tmp/cover.jpg',
+          'pdf_file': 'http://127.0.0.1:8001/storage/derses/sample.pdf',
+          'pdf_page_count': 120,
+          'sort_order': 1,
+          'episodes': [
+            {
+              'id': 1,
+              'ders_id': 1,
+              'title': 'What is Tafsir?',
+              'audio_file': 'http://127.0.0.1:8001/storage/episodes/tafsir-01.mp3',
+              'duration_seconds': 1800,
+              'start_page': 1,
+              'end_page': 15,
+              'sort_order': 1,
+            },
+          ],
+        },
+      ],
+    });
+
+    final ders = response.derses.single;
+    final episode = ders.episodes.single;
+
+    expect(response.ustazes.single.photoUrl,
+        'https://backend.abshewabu.dev/storage/tmp/photo.jpg');
+    expect(response.ustazes.single.isActive, isTrue);
+    expect(response.topics.single.isActive, isTrue);
+    expect(ders.isPublished, isTrue);
+    expect(ders.coverImageUrl,
+        'https://backend.abshewabu.dev/storage/tmp/cover.jpg');
+    expect(ders.pdfUrl, 'https://backend.abshewabu.dev/storage/derses/sample.pdf');
+    expect(episode.isPublished, isTrue);
+    expect(episode.audioUrl,
+        'https://backend.abshewabu.dev/storage/episodes/tafsir-01.mp3');
+  });
+
   test('upsertContent upserts active content and soft-deactivates stale rows', () async {
     await db.cachedUstazesDao.insert(
       CachedUstazesCompanion.insert(

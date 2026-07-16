@@ -1,3 +1,5 @@
+import '../core/network/api_constants.dart';
+
 class ContentResponse {
   const ContentResponse({
     required this.ustazes,
@@ -29,6 +31,53 @@ class ContentResponse {
         .map((item) => fromJson(Map<String, dynamic>.from(item)))
         .toList();
   }
+
+  /// API resources omit flags when only published/active rows are returned.
+  static bool _flag(Object? value, {required bool defaultValue}) {
+    if (value is bool) return value;
+    return defaultValue;
+  }
+
+  static String? _mediaUrl(Object? primary, [Object? fallback]) {
+    final raw = primary ?? fallback;
+    if (raw is! String || raw.isEmpty) return null;
+    return rewriteLocalMediaUrl(raw);
+  }
+
+  static String _requiredMediaUrl(Object? primary, [Object? fallback]) {
+    return _mediaUrl(primary, fallback) ?? '';
+  }
+}
+
+/// Rewrites localhost / relative storage URLs to the configured API host.
+///
+/// The backend currently emits `http://127.0.0.1:8001/...` when APP_URL is
+/// misconfigured for production; devices cannot reach that address.
+String rewriteLocalMediaUrl(String raw) {
+  final uri = Uri.tryParse(raw);
+  if (uri == null) return raw;
+
+  final base = Uri.parse(ApiConstants.baseUrl);
+
+  if (!uri.hasScheme) {
+    return base.resolve(raw).toString();
+  }
+
+  final host = uri.host.toLowerCase();
+  final isLocal = host == '127.0.0.1' ||
+      host == 'localhost' ||
+      host == '0.0.0.0' ||
+      host == '10.0.2.2';
+
+  if (!isLocal) return raw;
+
+  return Uri(
+    scheme: base.scheme,
+    host: base.host,
+    port: base.hasPort ? base.port : null,
+    path: uri.path,
+    query: uri.hasQuery ? uri.query : null,
+  ).toString();
 }
 
 class UstazDto {
@@ -56,9 +105,9 @@ class UstazDto {
       name: json['name'] as String,
       slug: json['slug'] as String,
       bio: json['bio'] as String?,
-      photoUrl: json['photo_url'] as String?,
+      photoUrl: ContentResponse._mediaUrl(json['photo'], json['photo_url']),
       sortOrder: json['sort_order'] as int? ?? 0,
-      isActive: json['is_active'] as bool? ?? true,
+      isActive: ContentResponse._flag(json['is_active'], defaultValue: true),
     );
   }
 }
@@ -90,7 +139,7 @@ class TopicDto {
       icon: json['icon'] as String?,
       color: json['color'] as String?,
       sortOrder: json['sort_order'] as int? ?? 0,
-      isActive: json['is_active'] as bool? ?? true,
+      isActive: ContentResponse._flag(json['is_active'], defaultValue: true),
     );
   }
 }
@@ -107,7 +156,7 @@ class DersDto {
     this.pdfPageCount = 0,
     this.topicId,
     this.sortOrder = 0,
-    this.isPublished = false,
+    this.isPublished = true,
     this.episodes = const [],
   });
 
@@ -130,13 +179,17 @@ class DersDto {
       title: json['title'] as String,
       slug: json['slug'] as String,
       description: json['description'] as String?,
-      coverImageUrl: json['cover_image_url'] as String?,
-      pdfUrl: json['pdf_url'] as String?,
+      coverImageUrl: ContentResponse._mediaUrl(
+        json['cover_image'],
+        json['cover_image_url'],
+      ),
+      pdfUrl: ContentResponse._mediaUrl(json['pdf_file'], json['pdf_url']),
       pdfPageCount: json['pdf_page_count'] as int? ?? 0,
       ustazId: json['ustaz_id'] as int,
       topicId: json['topic_id'] as int?,
       sortOrder: json['sort_order'] as int? ?? 0,
-      isPublished: json['is_published'] as bool? ?? false,
+      isPublished:
+          ContentResponse._flag(json['is_published'], defaultValue: true),
       episodes: ContentResponse._parseList(
         json['episodes'],
         EpisodeDto.fromJson,
@@ -155,7 +208,7 @@ class EpisodeDto {
     this.endPage = 0,
     this.durationSeconds = 0,
     this.sortOrder = 0,
-    this.isPublished = false,
+    this.isPublished = true,
   });
 
   final int id;
@@ -173,12 +226,16 @@ class EpisodeDto {
       id: json['id'] as int,
       dersId: json['ders_id'] as int,
       title: json['title'] as String,
-      audioUrl: json['audio_url'] as String,
+      audioUrl: ContentResponse._requiredMediaUrl(
+        json['audio_file'],
+        json['audio_url'],
+      ),
       startPage: json['start_page'] as int,
       endPage: json['end_page'] as int? ?? 0,
       durationSeconds: json['duration_seconds'] as int? ?? 0,
       sortOrder: json['sort_order'] as int? ?? 0,
-      isPublished: json['is_published'] as bool? ?? false,
+      isPublished:
+          ContentResponse._flag(json['is_published'], defaultValue: true),
     );
   }
 }
