@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfx/pdfx.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/app_empty_state.dart';
+import '../../../core/widgets/app_error_state.dart';
 import '../../favorites/models/favorite_entity_type.dart';
 import '../../favorites/presentation/widgets/favorite_star_button.dart';
 import '../models/player_session_state.dart';
@@ -147,12 +149,26 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   }
 
   Widget _buildPdfPanel(PlayerSessionState session) {
-    if (session.errorMessage != null && session.pdfPath == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(session.errorMessage!),
-        ),
+    if (session.errorMessage != null && !session.hasEpisode) {
+      return AppErrorState(
+        title: 'Could not start playback',
+        message: session.errorMessage,
+        onRetry: widget.episodeId == null
+            ? null
+            : () {
+                final episodeId = int.tryParse(widget.episodeId!);
+                if (episodeId != null) {
+                  ref.read(playerSessionProvider.notifier).loadEpisode(episodeId);
+                }
+              },
+      );
+    }
+
+    if (session.pdfPath == null) {
+      return const AppEmptyState(
+        icon: Icons.picture_as_pdf_outlined,
+        title: 'PDF unavailable offline',
+        message: 'Audio can still play from a download. Sync or download the ders to view the PDF.',
       );
     }
 

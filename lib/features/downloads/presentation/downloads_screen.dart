@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/app_empty_state.dart';
+import '../../../core/widgets/app_error_state.dart';
+import '../../../core/widgets/app_list_skeleton.dart';
 import '../../derses/providers/derses_providers.dart';
 import '../models/downloaded_ders_item.dart';
 import '../providers/download_providers.dart';
@@ -29,8 +32,15 @@ class DownloadsScreen extends ConsumerWidget {
         ],
       ),
       body: itemsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => const Center(child: Text('Could not load downloads')),
+        loading: () => const AppListSkeleton(),
+        error: (_, __) => AppErrorState(
+          title: 'Could not load downloads',
+          message: 'Something went wrong reading offline files.',
+          onRetry: () {
+            ref.invalidate(downloadedDersesProvider);
+            ref.invalidate(totalDownloadsBytesProvider);
+          },
+        ),
         data: (items) {
           final totalBytes = totalBytesAsync.maybeWhen(
             data: (value) => value,
@@ -54,15 +64,11 @@ class DownloadsScreen extends ConsumerWidget {
                 if (items.isEmpty)
                   const SliverFillRemaining(
                     hasScrollBody: false,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.download_outlined, size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text('No downloads yet'),
-                        ],
-                      ),
+                    child: AppEmptyState(
+                      icon: Icons.download_outlined,
+                      title: 'No downloads yet',
+                      message:
+                          'Download a ders from its episodes screen to listen offline.',
                     ),
                   )
                 else
@@ -74,7 +80,8 @@ class DownloadsScreen extends ConsumerWidget {
                       itemBuilder: (context, index) {
                         return _DownloadedDersTile(
                           item: items[index],
-                          onDelete: () => _deleteDers(context, ref, items[index]),
+                          onDelete: () =>
+                              _deleteDers(context, ref, items[index]),
                         );
                       },
                     ),

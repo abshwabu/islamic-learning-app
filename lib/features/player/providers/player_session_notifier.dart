@@ -77,10 +77,15 @@ class PlayerSessionNotifier extends StateNotifier<PlayerSessionState> {
       var pdfVersion = state.pdfVersion;
 
       if (state.ders?.id != ders.id || pdfPath == null) {
-        final pdfFile =
-            await _ref.read(pdfCacheServiceProvider).resolvePdfFile(ders);
-        pdfPath = pdfFile.path;
-        pdfVersion++;
+        try {
+          final pdfFile =
+              await _ref.read(pdfCacheServiceProvider).resolvePdfFile(ders);
+          pdfPath = pdfFile.path;
+          pdfVersion++;
+        } on Object {
+          // Offline without a local PDF should still allow downloaded audio.
+          pdfPath = null;
+        }
       }
 
       final audioSource = await _resolveAudioSource(
@@ -108,6 +113,7 @@ class PlayerSessionNotifier extends StateNotifier<PlayerSessionState> {
         isLoading: false,
         playbackSpeed: defaultSpeed,
         pdfPath: pdfPath,
+        clearPdfPath: pdfPath == null,
         pdfTargetPage: episode.startPage,
         pdfVersion: pdfVersion,
         clearError: true,

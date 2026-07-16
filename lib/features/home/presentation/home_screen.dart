@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../content/providers/content_sync_provider.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/widgets/app_empty_state.dart';
+import '../../../core/widgets/app_error_state.dart';
+import '../../../core/widgets/app_list_skeleton.dart';
+import '../../content/providers/content_sync_provider.dart';
 import '../models/home_models.dart';
 import '../providers/home_providers.dart';
 import 'widgets/browse_mode_toggle.dart';
 import 'widgets/continue_listening_row.dart';
 import 'widgets/home_search_bar.dart';
 import 'widgets/matching_derses_section.dart';
+import 'widgets/sync_error_banner.dart';
 import 'widgets/syncing_banner.dart';
 import 'widgets/topic_card.dart';
 import 'widgets/ustaz_card.dart';
@@ -36,6 +40,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
+  Future<void> _refresh() async {
+    await ref.read(contentSyncProvider.notifier).sync();
+    invalidateContentCaches(ref.invalidate);
+    ref.invalidate(continueListeningProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(contentSyncBootstrapProvider);
@@ -51,18 +61,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       orElse: () => HomeBrowseMode.ustaz,
     );
 
+    final bannerHeight = syncState.isSyncing
+        ? 28.0
+        : (syncState.hasError ? 56.0 : 0.0);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
-        bottom: syncState.isSyncing
-            ? const PreferredSize(
-                preferredSize: Size.fromHeight(28),
-                child: SyncingBanner(),
+        bottom: bannerHeight > 0
+            ? PreferredSize(
+                preferredSize: Size.fromHeight(bannerHeight),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (syncState.isSyncing) const SyncingBanner(),
+                    if (!syncState.isSyncing && syncState.lastError != null)
+                      SyncErrorBanner(
+                        message: syncState.lastError!,
+                        onRetry: () =>
+                            ref.read(contentSyncProvider.notifier).sync(),
+                      ),
+                  ],
+                ),
               )
             : null,
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref.read(contentSyncProvider.notifier).sync(),
+        onRefresh: _refresh,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
@@ -98,14 +123,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               SliverToBoxAdapter(
                 child: matchingDersesAsync.when(
                   data: (derses) => MatchingDersesSection(derses: derses),
-                  loading: () => const SizedBox.shrink(),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: LinearProgressIndicator(),
+                  ),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
               ),
             if (browseMode == HomeBrowseMode.ustaz)
-              _UstazGrid()
+              const _UstazGrid()
             else
-              _TopicGrid(),
+              const _TopicGrid(),
           ],
         ),
       ),
@@ -114,22 +142,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 }
 
 class _UstazGrid extends ConsumerWidget {
+  const _UstazGrid();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ustazesAsync = ref.watch(filteredUstazesProvider);
     final countsAsync = ref.watch(dersCountByUstazProvider);
+    final searchQuery = ref.watch(homeSearchQueryProvider).trim();
+    final matchingDerses = ref.watch(matchingDersesProvider).maybeWhen(
+          data: (value) => value,
+          orElse: () => const [],
+        );
+    final syncError = ref.watch(contentSyncProvider).lastError;
 
     return ustazesAsync.when(
-      loading: () => const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (_, __) => const SliverFillRemaining(
-        child: Center(child: Text('Could not load ustazes')),
+      loading: () => const AppSliverGridSkeleton(),
+      error: (_, __) => SliverFillRemaining(
+        hasScrollBody: false,
+        child: AppErrorState(
+          title: 'Could not load ustazes',
+          message: 'Something went wrong reading local content.',
+          onRetry: () {
+            invalidateContentCaches(ref.invalidate);
+            ref.invalidate(filteredUstazesProvider);
+          },
+        ),
       ),
       data: (ustazes) {
         if (ustazes.isEmpty) {
-          return const SliverFillRemaining(
-            child: Center(child: Text('No ustazes found')),
+          if (searchQuery.isNotEmpty) {
+            if (matchingDerses.isNotEmpty) {
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
+            }
+            return const SliverFillRemaining(
+              hasScrollBody: false,
+              child: AppEmptyState(
+                icon: Icons.search_off,
+                title: 'No search results',
+                message: 'Try a different ustaz name or ders title.',
+              ),
+            );
+          }
+
+          return SliverFillRemaining(
+            hasScrollBody: false,
+            child: AppEmptyState(
+              icon: Icons.person_outline,
+              title: syncError != null ? 'No content yet' : 'No ustazes yet',
+              message: syncError != null
+                  ? 'Connect to the internet and retry to download the catalog.'
+                  : 'Pull down to refresh when you are online.',
+              actionLabel: syncError != null ? 'Retry sync' : null,
+              onAction: syncError != null
+                  ? () => ref.read(contentSyncProvider.notifier).sync()
+                  : null,
+            ),
           );
         }
 
@@ -166,22 +233,61 @@ class _UstazGrid extends ConsumerWidget {
 }
 
 class _TopicGrid extends ConsumerWidget {
+  const _TopicGrid();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final topicsAsync = ref.watch(filteredTopicsProvider);
     final countsAsync = ref.watch(dersCountByTopicProvider);
+    final searchQuery = ref.watch(homeSearchQueryProvider).trim();
+    final matchingDerses = ref.watch(matchingDersesProvider).maybeWhen(
+          data: (value) => value,
+          orElse: () => const [],
+        );
+    final syncError = ref.watch(contentSyncProvider).lastError;
 
     return topicsAsync.when(
-      loading: () => const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (_, __) => const SliverFillRemaining(
-        child: Center(child: Text('Could not load topics')),
+      loading: () => const AppSliverGridSkeleton(),
+      error: (_, __) => SliverFillRemaining(
+        hasScrollBody: false,
+        child: AppErrorState(
+          title: 'Could not load topics',
+          message: 'Something went wrong reading local content.',
+          onRetry: () {
+            invalidateContentCaches(ref.invalidate);
+            ref.invalidate(filteredTopicsProvider);
+          },
+        ),
       ),
       data: (topics) {
         if (topics.isEmpty) {
-          return const SliverFillRemaining(
-            child: Center(child: Text('No topics found')),
+          if (searchQuery.isNotEmpty) {
+            if (matchingDerses.isNotEmpty) {
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
+            }
+            return const SliverFillRemaining(
+              hasScrollBody: false,
+              child: AppEmptyState(
+                icon: Icons.search_off,
+                title: 'No search results',
+                message: 'Try a different topic name or ders title.',
+              ),
+            );
+          }
+
+          return SliverFillRemaining(
+            hasScrollBody: false,
+            child: AppEmptyState(
+              icon: Icons.topic_outlined,
+              title: syncError != null ? 'No content yet' : 'No topics yet',
+              message: syncError != null
+                  ? 'Connect to the internet and retry to download the catalog.'
+                  : 'Pull down to refresh when you are online.',
+              actionLabel: syncError != null ? 'Retry sync' : null,
+              onAction: syncError != null
+                  ? () => ref.read(contentSyncProvider.notifier).sync()
+                  : null,
+            ),
           );
         }
 

@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/app_empty_state.dart';
+import '../../../core/widgets/app_error_state.dart';
+import '../../../core/widgets/app_list_skeleton.dart';
 import '../../derses/models/derses_models.dart';
 import '../../derses/providers/derses_providers.dart';
 import '../../downloads/models/download_models.dart';
@@ -33,6 +36,8 @@ class EpisodesListScreen extends ConsumerWidget {
       orElse: () => false,
     );
     final isDownloading = downloadProgress?.isRunning ?? false;
+    final downloadFailed = downloadProgress?.errorMessage != null &&
+        !(downloadProgress?.isRunning ?? false);
 
     return Scaffold(
       appBar: AppBar(title: Text(dersTitle)),
@@ -42,17 +47,28 @@ class EpisodesListScreen extends ConsumerWidget {
               (isDownloading || downloadProgress.errorMessage != null))
             _DownloadProgressBanner(
               progress: downloadProgress,
-              onCancel: () =>
-                  ref.read(dersDownloadProgressProvider(dersId).notifier).cancel(),
+              onCancel: () => ref
+                  .read(dersDownloadProgressProvider(dersId).notifier)
+                  .cancel(),
+              onRetry:
+                  downloadFailed ? () => _downloadDers(context, ref) : null,
             ),
           Expanded(
             child: episodesAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, __) =>
-                  const Center(child: Text('Could not load episodes')),
+              loading: () => const AppListSkeleton(),
+              error: (_, __) => AppErrorState(
+                title: 'Could not load episodes',
+                message: 'Something went wrong reading local content.',
+                onRetry: () =>
+                    ref.invalidate(episodesWithProgressProvider(dersId)),
+              ),
               data: (episodes) {
                 if (episodes.isEmpty) {
-                  return const Center(child: Text('No episodes found'));
+                  return const AppEmptyState(
+                    icon: Icons.headphones_outlined,
+                    title: 'No episodes found',
+                    message: 'This ders has no published episodes yet.',
+                  );
                 }
 
                 return ListView.separated(
@@ -94,7 +110,9 @@ class EpisodesListScreen extends ConsumerWidget {
                   ? 'Downloaded'
                   : isDownloading
                       ? 'Downloading...'
-                      : 'Download this Ders',
+                      : downloadFailed
+                          ? 'Retry download'
+                          : 'Download this Ders',
             ),
           ),
         ),
@@ -126,7 +144,13 @@ class EpisodesListScreen extends ConsumerWidget {
     } on Object catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Download failed: $error')),
+        SnackBar(
+          content: Text('Download failed: $error'),
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: () => _downloadDers(context, ref),
+          ),
+        ),
       );
     }
   }
@@ -136,17 +160,25 @@ class _DownloadProgressBanner extends StatelessWidget {
   const _DownloadProgressBanner({
     required this.progress,
     required this.onCancel,
+    this.onRetry,
   });
 
   final DersDownloadProgress progress;
   final VoidCallback onCancel;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
     final current = progress.currentFile;
+    final hasError = progress.errorMessage != null && !progress.isRunning;
 
     return Material(
-      color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4),
+      color: hasError
+          ? Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.5)
+          : Theme.of(context)
+              .colorScheme
+              .primaryContainer
+              .withValues(alpha: 0.4),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
         child: Column(
@@ -167,11 +199,18 @@ class _DownloadProgressBanner extends StatelessWidget {
                     onPressed: onCancel,
                     child: const Text('Cancel'),
                   ),
+                if (onRetry != null)
+                  TextButton(
+                    onPressed: onRetry,
+                    child: const Text('Retry'),
+                  ),
               ],
             ),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(value: progress.overallFraction),
-            if (current != null) ...[
+            if (progress.isRunning || !hasError) ...[
+              const SizedBox(height: 8),
+              LinearProgressIndicator(value: progress.overallFraction),
+            ],
+            if (current != null && progress.isRunning) ...[
               const SizedBox(height: 8),
               Text(
                 '${current.label} · ${(current.fraction * 100).toStringAsFixed(0)}%'

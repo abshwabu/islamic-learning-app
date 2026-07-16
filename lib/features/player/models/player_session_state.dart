@@ -45,6 +45,7 @@ class PlayerSessionState {
     int? pdfTargetPage,
     int? pdfVersion,
     bool clearError = false,
+    bool clearPdfPath = false,
   }) {
     return PlayerSessionState(
       episode: episode ?? this.episode,
@@ -57,7 +58,7 @@ class PlayerSessionState {
       sleepTimerEndsAt: clearSleepTimer
           ? null
           : (sleepTimerEndsAt ?? this.sleepTimerEndsAt),
-      pdfPath: pdfPath ?? this.pdfPath,
+      pdfPath: clearPdfPath ? null : (pdfPath ?? this.pdfPath),
       pdfTargetPage: pdfTargetPage ?? this.pdfTargetPage,
       pdfVersion: pdfVersion ?? this.pdfVersion,
     );

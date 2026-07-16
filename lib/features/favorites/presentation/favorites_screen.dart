@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/app_empty_state.dart';
+import '../../../core/widgets/app_error_state.dart';
+import '../../../core/widgets/app_list_skeleton.dart';
 import '../models/favorite_entity_type.dart';
 import '../models/favorite_items.dart';
 import '../providers/favorites_providers.dart';
@@ -32,16 +35,32 @@ class FavoritesScreen extends ConsumerWidget {
         body: TabBarView(
           children: [
             dersesAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, __) =>
-                  const Center(child: Text('Could not load favorite derses')),
-              data: (items) => _FavoriteDersesList(items: items),
+              loading: () => const AppListSkeleton(),
+              error: (_, __) => AppErrorState(
+                title: 'Could not load favorite derses',
+                onRetry: () => ref.invalidate(favoriteDersesProvider),
+              ),
+              data: (items) => _FavoriteDersesList(
+                items: items,
+                onRefresh: () async {
+                  ref.invalidate(favoriteDersesProvider);
+                  await ref.read(favoriteDersesProvider.future);
+                },
+              ),
             ),
             episodesAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, __) =>
-                  const Center(child: Text('Could not load favorite episodes')),
-              data: (items) => _FavoriteEpisodesList(items: items),
+              loading: () => const AppListSkeleton(),
+              error: (_, __) => AppErrorState(
+                title: 'Could not load favorite episodes',
+                onRetry: () => ref.invalidate(favoriteEpisodesProvider),
+              ),
+              data: (items) => _FavoriteEpisodesList(
+                items: items,
+                onRefresh: () async {
+                  ref.invalidate(favoriteEpisodesProvider);
+                  await ref.read(favoriteEpisodesProvider.future);
+                },
+              ),
             ),
           ],
         ),
@@ -51,125 +70,141 @@ class FavoritesScreen extends ConsumerWidget {
 }
 
 class _FavoriteDersesList extends StatelessWidget {
-  const _FavoriteDersesList({required this.items});
+  const _FavoriteDersesList({
+    required this.items,
+    required this.onRefresh,
+  });
 
   final List<FavoriteDersItem> items;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const _EmptyFavorites(
-        icon: Icons.star_border,
-        message: 'No favorite derses yet',
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(
+              height: 420,
+              child: AppEmptyState(
+                icon: Icons.star_border,
+                title: 'No favorite derses yet',
+                message: 'Tap the star on a ders to save it here.',
+              ),
+            ),
+          ],
+        ),
       );
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return Card(
-          child: ListTile(
-            onTap: () => context.push(AppRoutes.dersEpisodesPath(item.ders.id)),
-            leading: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                width: 48,
-                height: 48,
-                color: Theme.of(context).colorScheme.primaryContainer,
-                child: item.ders.coverImageUrl != null
-                    ? Image.network(
-                        item.ders.coverImageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.menu_book_outlined),
-                      )
-                    : const Icon(Icons.menu_book_outlined),
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          final item = items[index];
+          return Card(
+            child: ListTile(
+              onTap: () => context.push(AppRoutes.dersEpisodesPath(item.ders.id)),
+              leading: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: item.ders.coverImageUrl != null
+                      ? Image.network(
+                          item.ders.coverImageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.menu_book_outlined),
+                        )
+                      : const Icon(Icons.menu_book_outlined),
+                ),
+              ),
+              title: Text(item.ders.title),
+              subtitle: item.ders.description != null
+                  ? Text(
+                      item.ders.description!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  : null,
+              trailing: FavoriteStarButton(
+                entityType: FavoriteEntityType.ders,
+                entityId: item.ders.id,
               ),
             ),
-            title: Text(item.ders.title),
-            subtitle: item.ders.description != null
-                ? Text(
-                    item.ders.description!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  )
-                : null,
-            trailing: FavoriteStarButton(
-              entityType: FavoriteEntityType.ders,
-              entityId: item.ders.id,
-            ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
 
 class _FavoriteEpisodesList extends StatelessWidget {
-  const _FavoriteEpisodesList({required this.items});
+  const _FavoriteEpisodesList({
+    required this.items,
+    required this.onRefresh,
+  });
 
   final List<FavoriteEpisodeItem> items;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const _EmptyFavorites(
-        icon: Icons.star_border,
-        message: 'No favorite episodes yet',
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(
+              height: 420,
+              child: AppEmptyState(
+                icon: Icons.star_border,
+                title: 'No favorite episodes yet',
+                message: 'Tap the star on an episode to save it here.',
+              ),
+            ),
+          ],
+        ),
       );
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return Card(
-          child: ListTile(
-            onTap: () =>
-                context.push(AppRoutes.playerEpisodePath(item.episode.id)),
-            leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              child: const Icon(Icons.play_arrow),
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          final item = items[index];
+          return Card(
+            child: ListTile(
+              onTap: () =>
+                  context.push(AppRoutes.playerEpisodePath(item.episode.id)),
+              leading: CircleAvatar(
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                child: const Icon(Icons.play_arrow),
+              ),
+              title: Text(item.episode.title),
+              subtitle: Text(
+                '${item.ders.title} · ${formatDuration(item.episode.durationSeconds)}',
+              ),
+              trailing: FavoriteStarButton(
+                entityType: FavoriteEntityType.episode,
+                entityId: item.episode.id,
+              ),
             ),
-            title: Text(item.episode.title),
-            subtitle: Text(
-              '${item.ders.title} · ${formatDuration(item.episode.durationSeconds)}',
-            ),
-            trailing: FavoriteStarButton(
-              entityType: FavoriteEntityType.episode,
-              entityId: item.episode.id,
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _EmptyFavorites extends StatelessWidget {
-  const _EmptyFavorites({
-    required this.icon,
-    required this.message,
-  });
-
-  final IconData icon;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(message),
-        ],
+          );
+        },
       ),
     );
   }
