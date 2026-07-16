@@ -26,6 +26,7 @@ dependencies:
   pdfx: ^2.9.2
   rxdart: ^0.28.0
   connectivity_plus: ^6.1.4
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:
@@ -33,6 +34,29 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   build_runner: ^2.4.15
   drift_dev: ^2.26.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.7
 
 flutter:
   uses-material-design: true
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#1B5E20"
+  adaptive_icon_foreground: "assets/icon/icon.png"
+
+flutter_native_splash:
+  color: "#1B5E20"
+  color_dark: "#121212"
+  image: "assets/splash/splash.png"
+  image_dark: "assets/splash/splash.png"
+  android_12:
+    image: "assets/splash/splash.png"
+    icon_background_color: "#1B5E20"
+    image_dark: "assets/splash/splash.png"
+    icon_background_color_dark: "#121212"
+  android: true
+  ios: true
+  web: false

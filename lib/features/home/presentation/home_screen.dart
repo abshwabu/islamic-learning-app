@@ -12,7 +12,6 @@ import '../providers/home_providers.dart';
 import 'widgets/browse_mode_toggle.dart';
 import 'widgets/continue_listening_row.dart';
 import 'widgets/home_search_bar.dart';
-import 'widgets/matching_derses_section.dart';
 import 'widgets/sync_error_banner.dart';
 import 'widgets/syncing_banner.dart';
 import 'widgets/topic_card.dart';
@@ -120,15 +119,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             if (searchQuery.trim().isNotEmpty)
-              SliverToBoxAdapter(
-                child: matchingDersesAsync.when(
-                  data: (derses) => MatchingDersesSection(derses: derses),
-                  loading: () => const Padding(
+              matchingDersesAsync.when(
+                data: (derses) {
+                  if (derses.isEmpty) {
+                    return const SliverToBoxAdapter(child: SizedBox.shrink());
+                  }
+                  return SliverList.builder(
+                    itemCount: derses.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                          child: Text(
+                            'Matching Derses',
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        );
+                      }
+                      final ders = derses[index - 1];
+                      return ListTile(
+                        leading: const Icon(Icons.menu_book_outlined),
+                        title: Text(ders.title),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.push(AppRoutes.dersEpisodesPath(ders.id)),
+                      );
+                    },
+                  );
+                },
+                loading: () => const SliverToBoxAdapter(
+                  child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: LinearProgressIndicator(),
                   ),
-                  error: (_, __) => const SizedBox.shrink(),
                 ),
+                error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
               ),
             if (browseMode == HomeBrowseMode.ustaz)
               const _UstazGrid()

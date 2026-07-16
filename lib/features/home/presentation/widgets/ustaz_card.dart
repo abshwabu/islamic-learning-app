@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/database/database.dart';
@@ -31,7 +32,7 @@ class UstazCard extends StatelessWidget {
                 backgroundColor:
                     Theme.of(context).colorScheme.primaryContainer,
                 backgroundImage: ustaz.photoUrl != null
-                    ? NetworkImage(ustaz.photoUrl!)
+                    ? CachedNetworkImageProvider(ustaz.photoUrl!)
                     : null,
                 child: ustaz.photoUrl == null
                     ? Text(

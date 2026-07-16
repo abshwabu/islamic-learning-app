@@ -8,7 +8,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await JustAudioBackground.init(
-      androidNotificationChannelId: 'com.islamiclearning.audio',
+      androidNotificationChannelId: 'com.binatechnologies.islamiclearning.audio',
       androidNotificationChannelName: 'Islamic Learning Playback',
       androidNotificationOngoing: true,
     );

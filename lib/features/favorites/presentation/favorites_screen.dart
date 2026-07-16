@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -118,10 +119,17 @@ class _FavoriteDersesList extends StatelessWidget {
                   height: 48,
                   color: Theme.of(context).colorScheme.primaryContainer,
                   child: item.ders.coverImageUrl != null
-                      ? Image.network(
-                          item.ders.coverImageUrl!,
+                      ? CachedNetworkImage(
+                          imageUrl: item.ders.coverImageUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
+                          placeholder: (context, url) => const Center(
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 1.5),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) =>
                               const Icon(Icons.menu_book_outlined),
                         )
                       : const Icon(Icons.menu_book_outlined),
