@@ -3,8 +3,9 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/database.dart';
+import '../../settings/models/app_settings_keys.dart';
 
-const wifiOnlySettingKey = 'download_wifi_only';
+const wifiOnlySettingKey = AppSettingsKeys.downloadWifiOnly;
 
 final wifiOnlyDownloadProvider =
     AsyncNotifierProvider<WifiOnlyDownloadNotifier, bool>(

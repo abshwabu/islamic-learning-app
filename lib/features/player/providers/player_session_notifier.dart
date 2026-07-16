@@ -8,6 +8,7 @@ import 'package:just_audio_background/just_audio_background.dart';
 import '../../../core/database/database.dart';
 import '../../home/providers/home_providers.dart';
 import '../../derses/providers/derses_providers.dart';
+import '../../settings/providers/default_playback_speed_provider.dart';
 import '../models/player_session_state.dart';
 import '../services/pdf_cache_service.dart';
 
@@ -40,6 +41,11 @@ class PlayerSessionNotifier extends StateNotifier<PlayerSessionState> {
 
     _playerStateSub = player.playerStateStream.listen(_onPlayerStateChanged);
     _positionSub = player.positionStream.listen(_onPositionChanged);
+
+    final defaultSpeed =
+        await _ref.read(defaultPlaybackSpeedProvider.future);
+    state = state.copyWith(playbackSpeed: defaultSpeed);
+    await player.setSpeed(defaultSpeed);
   }
 
   Future<void> loadEpisode(int episodeId) async {
@@ -83,7 +89,9 @@ class PlayerSessionNotifier extends StateNotifier<PlayerSessionState> {
         artist: ustaz?.name ?? 'Islamic Learning',
       );
 
-      await player.setSpeed(state.playbackSpeed);
+      final defaultSpeed =
+          await _ref.read(defaultPlaybackSpeedProvider.future);
+      await player.setSpeed(defaultSpeed);
       await player.setAudioSource(audioSource);
 
       final savedProgress = await _db.progressDao.getByEpisodeId(episode.id);
@@ -98,6 +106,7 @@ class PlayerSessionNotifier extends StateNotifier<PlayerSessionState> {
         episodes: episodes,
         currentIndex: currentIndex,
         isLoading: false,
+        playbackSpeed: defaultSpeed,
         pdfPath: pdfPath,
         pdfTargetPage: episode.startPage,
         pdfVersion: pdfVersion,

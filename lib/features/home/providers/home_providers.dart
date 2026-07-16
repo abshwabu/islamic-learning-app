@@ -3,9 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/database.dart';
 import '../../content/providers/content_sync_provider.dart';
+import '../../settings/models/app_settings_keys.dart';
 import '../models/home_models.dart';
-
-const _browseModeKey = 'home_browse_mode';
 
 final homeSearchQueryProvider = StateProvider<String>((ref) => '');
 
@@ -17,8 +16,10 @@ final homeBrowseModeProvider =
 class HomeBrowseModeNotifier extends AsyncNotifier<HomeBrowseMode> {
   @override
   Future<HomeBrowseMode> build() async {
-    final setting =
-        await ref.read(databaseProvider).settingsDao.getByKey(_browseModeKey);
+    final setting = await ref
+        .read(databaseProvider)
+        .settingsDao
+        .getByKey(AppSettingsKeys.homeBrowseMode);
     return HomeBrowseMode.fromSetting(setting?.value);
   }
 
@@ -26,7 +27,7 @@ class HomeBrowseModeNotifier extends AsyncNotifier<HomeBrowseMode> {
     state = AsyncData(mode);
     await ref.read(databaseProvider).settingsDao.upsert(
           SettingsCompanion(
-            key: const Value(_browseModeKey),
+            key: const Value(AppSettingsKeys.homeBrowseMode),
             value: Value(mode.settingValue),
             updatedAt: Value(DateTime.now()),
           ),
