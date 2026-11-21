@@ -152,6 +152,7 @@ class MainShell extends StatelessWidget {
     return Scaffold(
       body: child,
       bottomNavigationBar: NavigationBar(
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         selectedIndex: selectedIndex,
         onDestinationSelected: (index) => _onDestinationSelected(context, index),
         destinations: const [

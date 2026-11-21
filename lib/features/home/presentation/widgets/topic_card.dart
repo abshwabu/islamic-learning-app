@@ -25,17 +25,17 @@ class TopicCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircleAvatar(
-                radius: 36,
+              radius: 32,
                 backgroundColor: color.withValues(alpha: 0.15),
                 child: Icon(
                   topicIconData(topic.icon),
                   color: color,
-                  size: 32,
+                  size: 28,
                 ),
               ),
               const SizedBox(height: 12),
@@ -52,7 +52,7 @@ class TopicCard extends StatelessWidget {
               Text(
                 dersCountLabel(dersCount),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               ),
             ],

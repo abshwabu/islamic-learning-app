@@ -15,7 +15,7 @@ class BrowseModeToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
       child: SegmentedButton<HomeBrowseMode>(
         segments: const [
           ButtonSegment(

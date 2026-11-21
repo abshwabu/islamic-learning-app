@@ -17,19 +17,46 @@ abstract final class AppTheme {
       brightness: Brightness.light,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.surfaceLight,
+      visualDensity: VisualDensity.standard,
+      dividerTheme: DividerThemeData(
+        color: colorScheme.outlineVariant.withValues(alpha: 0.55),
+        space: 1,
+      ),
       appBarTheme: AppBarTheme(
-        centerTitle: true,
+        centerTitle: false,
         elevation: 0,
         backgroundColor: AppColors.surfaceLight,
         foregroundColor: AppColors.primaryDark,
+        titleTextStyle: const TextStyle(
+          color: AppColors.primaryDark,
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
+        ),
       ),
       cardTheme: CardThemeData(
         color: AppColors.cardLight,
-        elevation: 1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.45)),
+        ),
+      ),
+      searchBarTheme: SearchBarThemeData(
+        elevation: WidgetStateProperty.all(0),
+        shape: WidgetStateProperty.all(RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.55)),
+        )),
+        padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16)),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
+        height: 76,
+        elevation: 0,
+        backgroundColor: AppColors.cardLight,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.13),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return const TextStyle(
@@ -37,7 +64,7 @@ abstract final class AppTheme {
               color: AppColors.primary,
             );
           }
-          return const TextStyle(color: Colors.grey);
+          return TextStyle(color: colorScheme.onSurfaceVariant);
         }),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
@@ -62,17 +89,33 @@ abstract final class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.surfaceDark,
       appBarTheme: const AppBarTheme(
-        centerTitle: true,
+        centerTitle: false,
         elevation: 0,
         backgroundColor: AppColors.surfaceDark,
-        foregroundColor: Colors.white,
+        foregroundColor: Color(0xFFF1F4EF),
       ),
       cardTheme: CardThemeData(
         color: AppColors.cardDark,
-        elevation: 1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white12),
+        ),
+      ),
+      searchBarTheme: SearchBarThemeData(
+        elevation: WidgetStateProperty.all(0),
+        shape: WidgetStateProperty.all(RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Colors.white12),
+        )),
+        padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16)),
       ),
       navigationBarTheme: NavigationBarThemeData(
+        height: 76,
+        elevation: 0,
+        backgroundColor: AppColors.cardDark,
         indicatorColor: AppColors.primaryLight.withValues(alpha: 0.2),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {

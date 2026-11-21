@@ -23,12 +23,12 @@ class UstazCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircleAvatar(
-                radius: 36,
+              radius: 32,
                 backgroundColor:
                     Theme.of(context).colorScheme.primaryContainer,
                 backgroundImage: ustaz.photoUrl != null
@@ -58,7 +58,7 @@ class UstazCard extends StatelessWidget {
               Text(
                 dersCountLabel(dersCount),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               ),
             ],

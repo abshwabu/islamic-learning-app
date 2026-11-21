@@ -17,7 +17,7 @@ class ContinueListeningRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
           child: Text(
             'Continue Listening',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -51,7 +51,7 @@ class _ContinueListeningCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 220,
+      width: 236,
       child: Card(
         clipBehavior: Clip.antiAlias,
         child: InkWell(
